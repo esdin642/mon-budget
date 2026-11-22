@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#15241E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mon Budget">
+<title>Mon Budget</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Mon Budget","short_name":"Budget","start_url":".","display":"standalone","orientation":"portrait","background_color":"%23EEF0E9","theme_color":"%2315241E","icons":[{"src":"data:image/svg%2Bxml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2742%27 fill=%27%2315241E%27/%3E%3Ctext x=%2796%27 y=%27130%27 font-size=%27104%27 font-family=%27Georgia,serif%27 fill=%27%23fff%27 text-anchor=%27middle%27%3EB%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml","purpose":"any"}]}'>
+<style>
+  :root{
+    --papier:#EEF0E9; --encre:#15241E; --encre2:#4A5B53; --surface:#fff;
+    --vert:#1F6F5C; --vert-clair:#DCEBE4; --ocre:#D9A32B; --rouge:#B8433A; --trait:#D5D9CE;
+    --nav:72px;
+    --bas:env(safe-area-inset-bottom,0px);
+    --haut:env(safe-area-inset-top,0px);
+    --ombre:0 2px 8px rgba(21,36,30,.08);
+    --ombre-h:0 6px 20px rgba(21,36,30,.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{overscroll-behavior-y:contain}
+  body{
+    background:var(--papier);color:var(--encre);
+    font:15px/1.45 "Inter",system-ui,Roboto,-apple-system,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior-y:contain;
+  }
+  h1,h2,.serif{font-family:Georgia,"Times New Roman",serif;letter-spacing:-.01em}
+
+  /* ---------- barre du haut ---------- */
+  #haut{
+    position:sticky;top:0;z-index:40;background:var(--papier);
+    padding:calc(var(--haut) + 10px) 14px 10px;
+    border-bottom:1px solid transparent;transition:border-color .2s,box-shadow .2s;
+  }
+  #haut.colle{border-color:var(--trait);box-shadow:var(--ombre)}
+  #haut .barre-titre{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  #titreMois{font-size:19px;font-weight:600;text-transform:capitalize;line-height:1.1}
+  #etat{font-size:11px;color:var(--encre2);margin-top:2px}
+
+  /* ---------- contenu ---------- */
+  main{max-width:560px;margin:0 auto;padding:14px 14px calc(var(--nav) + var(--bas) + 86px)}
+  .carte{background:var(--surface);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--ombre)}
+  .carte h2{font-size:16.5px;font-weight:600;margin-bottom:12px}
+  .eti{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--encre2);font-weight:600}
+  .num{font-variant-numeric:tabular-nums}
+  .gros{font-family:Georgia,serif;font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+  .rangee{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .ligne{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid var(--trait)}
+  .ligne:last-child{border-bottom:none}
+  .mini{font-size:11.5px;color:var(--encre2);line-height:1.45}
+  .vide{font-size:13.5px;color:var(--encre2);line-height:1.5}
+  .barre{height:8px;background:var(--papier);border-radius:4px;overflow:hidden;margin-top:7px}
+  .barre>i{display:block;height:100%;border-radius:4px;transition:width .45s cubic-bezier(.2,.8,.2,1)}
+  .grille{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .puce{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;background:var(--vert-clair);color:var(--vert)}
+  .alerte{padding:13px 14px;border-radius:14px;font-size:13px;line-height:1.5;margin-bottom:12px;background:#FBF2DC;color:#8A6A14}
+
+  /* ---------- contrôles, cibles 48 dp ---------- */
+  input,select,textarea,button{font:inherit;color:inherit}
+  input,select,textarea{
+    width:100%;min-height:50px;padding:13px 14px;border:1.5px solid var(--trait);
+    border-radius:12px;background:var(--surface);appearance:none;
+  }
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%234A5B53' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;padding-right:40px}
+  input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--vert);outline-offset:1px;border-color:var(--vert)}
+  input[type=checkbox]{width:24px;height:24px;min-height:24px;accent-color:var(--vert);padding:0}
+  .btn{
+    width:100%;min-height:52px;border:none;border-radius:14px;background:var(--encre);
+    color:#fff;font-weight:600;font-size:15.5px;transition:transform .08s,filter .15s;
+  }
+  .btn:active{transform:scale(.975);filter:brightness(1.15)}
+  .btn.vert{background:var(--vert)}
+  .btn.clair{background:#E3E7DE;color:var(--encre)}
+  .btn:disabled{background:#E3E7DE;color:var(--encre2)}
+  .sup{border:none;background:none;color:var(--encre2);font-size:26px;line-height:1;width:44px;height:44px;min-height:44px;border-radius:22px;flex:0 0 auto}
+  .sup:active{background:var(--papier)}
+  .rond{
+    width:44px;height:44px;min-height:44px;border-radius:22px;border:none;background:var(--surface);
+    box-shadow:var(--ombre);font-size:22px;line-height:1;padding:0;flex:0 0 auto;transition:transform .08s;
+  }
+  .rond:active{transform:scale(.92)}
+
+  /* segments */
+  .seg{display:flex;background:#E3E7DE;border-radius:13px;padding:4px;gap:4px}
+  .seg button{flex:1;min-height:44px;border:none;border-radius:10px;background:none;color:var(--encre2);font-weight:600;font-size:14px;transition:background .15s}
+  .seg button[aria-selected="true"]{background:var(--surface);color:var(--encre);box-shadow:var(--ombre)}
+
+  /* jetons de montant */
+  .jetons{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  .jetons::-webkit-scrollbar{display:none}
+  .jetons button{
+    flex:0 0 auto;min-height:44px;padding:0 16px;border-radius:22px;border:1.5px solid var(--trait);
+    background:var(--surface);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;
+  }
+  .jetons button:active{background:var(--vert-clair);border-color:var(--vert)}
+
+  /* ---------- navigation basse ---------- */
+  #nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:50;
+    background:var(--surface);border-top:1px solid var(--trait);
+    padding-bottom:var(--bas);
+    display:flex;justify-content:space-around;align-items:stretch;
+    box-shadow:0 -2px 12px rgba(21,36,30,.06);
+  }
+  #nav button{
+    flex:1;min-height:var(--nav);border:none;background:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    color:var(--encre2);font-size:10.5px;font-weight:600;padding:8px 2px;position:relative;
+  }
+  #nav button svg{width:24px;height:24px;stroke-width:1.9}
+  #nav button[aria-selected="true"]{color:var(--vert)}
+  #nav button[aria-selected="true"] .pastille{
+    position:absolute;top:8px;width:40px;height:30px;border-radius:15px;background:var(--vert-clair);z-index:-1
+  }
+  #nav button:active{background:var(--papier)}
+
+  /* ---------- bouton flottant ---------- */
+  #fab{
+    position:fixed;right:16px;bottom:calc(var(--nav) + var(--bas) + 16px);z-index:55;
+    width:62px;height:62px;border-radius:21px;border:none;background:var(--vert);color:#fff;
+    box-shadow:var(--ombre-h);display:flex;align-items:center;justify-content:center;
+    transition:transform .12s cubic-bezier(.2,.8,.2,1);
+  }
+  #fab svg{width:28px;height:28px;stroke-width:2.4}
+  #fab:active{transform:scale(.9)}
+
+  /* ---------- feuille de saisie ---------- */
+  #voile{
+    position:fixed;inset:0;z-index:60;background:rgba(21,36,30,.45);
+    opacity:0;pointer-events:none;transition:opacity .22s;
+  }
+  #voile.ouvert{opacity:1;pointer-events:auto}
+  #feuille{
+    position:fixed;left:0;right:0;bottom:0;z-index:61;
+    background:var(--surface);border-radius:24px 24px 0 0;
+    padding:8px 16px calc(var(--bas) + 20px);
+    max-height:92vh;overflow-y:auto;overscroll-behavior:contain;
+    transform:translateY(102%);transition:transform .26s cubic-bezier(.2,.9,.25,1);
+    box-shadow:0 -8px 32px rgba(21,36,30,.2);
+  }
+  #feuille.ouvert{transform:translateY(0)}
+  .poignee{width:40px;height:4px;border-radius:2px;background:var(--trait);margin:6px auto 14px}
+  #champMontant{
+    font-family:Georgia,serif;font-size:34px;font-weight:600;text-align:center;
+    font-variant-numeric:tabular-nums;min-height:66px;letter-spacing:-.02em;
+  }
+
+  /* ---------- message éphémère ---------- */
+  #toast{
+    position:fixed;left:14px;right:14px;bottom:calc(var(--nav) + var(--bas) + 90px);z-index:70;
+    background:var(--encre);color:#fff;border-radius:14px;padding:14px 16px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;
+    opacity:0;transform:translateY(14px);pointer-events:none;transition:opacity .2s,transform .2s;
+    box-shadow:var(--ombre-h);max-width:532px;margin:0 auto;
+  }
+  #toast.ouvert{opacity:1;transform:translateY(0);pointer-events:auto}
+  #toast button{background:none;border:none;color:#8FD9BD;font-weight:700;font-size:14px;padding:6px 4px;min-height:auto}
+
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header id="haut">
+  <div class="barre-titre">
+    <button class="rond" id="prev" aria-label="Mois précédent">‹</button>
+    <div style="text-align:center;flex:1;min-width:0">
+      <div class="serif" id="titreMois"></div>
+      <div id="etat"></div>
+    </div>
+    <button class="rond" id="next" aria-label="Mois suivant">›</button>
+  </div>
+</header>
+
+<main>
+  <section id="vue-bord" hidden></section>
+  <section id="vue-depenses" hidden></section>
+  <section id="vue-prets" hidden></section>
+  <section id="vue-prevision" hidden></section>
+  <section id="vue-plus" hidden></section>
+  <section id="vue-objectifs" hidden></section>
+  <section id="vue-reglages" hidden></section>
+</main>
+
+<button id="fab" aria-label="Noter une opération">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<nav id="nav" role="tablist"></nav>
+
+<div id="voile"></div>
+<div id="feuille" role="dialog" aria-modal="true" aria-label="Noter une opération">
+  <div class="poignee"></div>
+
+  <div class="seg" style="margin-bottom:14px">
+    <button id="tDepense" aria-selected="true">Dépense</button>
+    <button id="tEntree" aria-selected="false">Entrée</button>
+  </div>
+
+  <input id="fMontant" type="number" inputmode="decimal" step="5" min="0" placeholder="0" aria-label="Montant">
+  <div id="uniteMontant" class="mini" style="text-align:center;margin:6px 0 12px"></div>
+
+  <div class="jetons" id="jetons" style="margin-bottom:14px"></div>
+
+  <input id="fLibelle" placeholder="Libellé — taxi, attiéké, recharge…" style="margin-bottom:10px">
+  <select id="fCategorie" style="margin-bottom:10px" aria-label="Catégorie"></select>
+  <select id="fMoyen" style="margin-bottom:10px" aria-label="Moyen de paiement"></select>
+  <input id="fDate" type="date" style="margin-bottom:12px" aria-label="Date">
+
+  <label class="rangee" style="justify-content:flex-start;gap:12px;margin-bottom:16px;min-height:48px">
+    <input id="fFixe" type="checkbox">
+    <span style="font-size:14px">Charge fixe, revient chaque mois</span>
+  </label>
+
+  <button class="btn vert" id="fAjouter" style="margin-bottom:10px">Enregistrer</button>
+  <button class="btn clair" id="fFermer">Annuler</button>
+</div>
+
+<div id="toast"><span id="toastTxt"></span><button id="toastAct">Annuler</button></div>
+
+<script>
+/* ============================ DONNÉES ============================ */
+const CLE = "mon-budget-v1";
+const CATS = [
+  ["Loyer","besoin"],["Alimentation","besoin"],["Transport","besoin"],
+  ["Factures","besoin"],["Santé","besoin"],["Famille","besoin"],["Scolarité","besoin"],
+  ["Loisirs","envie"],["Restaurants","envie"],["Achats","envie"],["Dons","envie"],["Divers","envie"],
+  ["Épargne","epargne"],
+  ["Prêt accordé","flux"],["Dette remboursée","flux"],["Remboursement reçu","flux"],["Emprunt reçu","flux"]
+];
+const TYPE = Object.fromEntries(CATS);
+const COUL = {besoin:"var(--vert)",envie:"var(--ocre)",epargne:"var(--encre)",flux:"#7A8B82"};
+const MOYENS = ["Espèces","Wave","Orange Money","Djamo","MTN MoMo","Moov Money","Carte","Virement","Chèque"];
+const JETONS = [500,1000,2000,5000,10000,25000];
+
+let S = {tx:[], budgets:{}, objectifs:[], creances:[], devise:"FCFA"};
+let mois = clefMois(new Date());
+let vue = "bord";
+let typeSaisie = "depense";
+let sensSaisie = "pret";
+let derniere = null;          /* dernière opération, pour l'annulation */
+let minuteurToast = null;
+
+/* ============================ PERSISTANCE ============================ */
+function charger(){
+  try{ const v = localStorage.getItem(CLE); if(v) S = Object.assign(S, JSON.parse(v)); return true; }
+  catch(e){ return false; }
+}
+function sauver(){
+  try{
+    localStorage.setItem(CLE, JSON.stringify(S));
+    majEtat(`Enregistré · ${new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}`);
+    return true;
+  }catch(e){ majEtat("⚠ Enregistrement bloqué", true); return false; }
+}
+function majEtat(txt, ko){
+  const e = document.getElementById("etat");
+  e.textContent = txt; e.style.color = ko ? "var(--rouge)" : "var(--encre2)";
+}
+function vibrer(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
+
+/* ============================ OUTILS ============================ */
+function clefMois(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+function nomMois(c){ const [a,m]=c.split("-").map(Number); return new Date(a,m-1,1).toLocaleDateString("fr-FR",{month:"long",year:"numeric"}); }
+function nbJours(c){ const [a,m]=c.split("-").map(Number); return new Date(a,m,0).getDate(); }
+function decalerMois(c,p){ const [a,m]=c.split("-").map(Number); return clefMois(new Date(a,m-1+p,1)); }
+function f(n){ return Math.round(n).toLocaleString("fr-FR")+" "+S.devise; }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function duMois(c){ return S.tx.filter(t=>t.date.slice(0,7)===c); }
+function aujISO(){ return new Date().toISOString().slice(0,10); }
+
+function effortMensuel(o){
+  const reste = Math.max((o.cible||0)-(o.verse||0),0);
+  if(reste===0 || !o.echeance) return 0;
+  const m = Math.max(Math.ceil((new Date(o.echeance)-new Date())/(1000*60*60*24*30.4)),1);
+  return reste/m;
+}
+function resteDu(c){ return Math.max((c.montant||0)-(c.regle||0),0); }
+function joursRestants(d){ return d ? Math.ceil((new Date(d+"T12:00:00") - new Date())/(1000*60*60*24)) : null; }
+function totalCreances(){ return S.creances.filter(c=>c.sens==="pret").reduce((s,c)=>s+resteDu(c),0); }
+function totalDettes(){ return S.creances.filter(c=>c.sens==="dette").reduce((s,c)=>s+resteDu(c),0); }
+function echeancesChaudes(){
+  return S.creances.filter(c=>resteDu(c)>0 && c.echeance)
+    .map(c=>({c, j:joursRestants(c.echeance)}))
+    .filter(x=>x.j!==null && x.j<=10).sort((a,b)=>a.j-b.j);
+}
+
+function bilan(c){
+  const t = duMois(c);
+  const entrees = t.filter(x=>x.type==="entree").reduce((s,x)=>s+x.montant,0);
+  const dep = t.filter(x=>x.type==="depense");
+  const depenses = dep.reduce((s,x)=>s+x.montant,0);
+  const parCat={}, parType={besoin:0,envie:0,epargne:0,flux:0}, parMoyen={};
+  dep.forEach(x=>{
+    parCat[x.categorie]=(parCat[x.categorie]||0)+x.montant;
+    parType[TYPE[x.categorie]||"envie"]+=x.montant;
+    const m = x.moyen||"Non précisé"; parMoyen[m]=(parMoyen[m]||0)+x.montant;
+  });
+  return {entrees,depenses,solde:entrees-depenses,parCat,parType,parMoyen,
+    epargne:parType.epargne, flux:parType.flux,
+    courantes:depenses-parType.epargne-parType.flux,
+    entreesNettes:entrees - t.filter(x=>x.type==="entree"&&TYPE[x.categorie]==="flux").reduce((s,x)=>s+x.montant,0),
+    nb:t.length, fixes:dep.filter(x=>x.fixe).reduce((s,x)=>s+x.montant,0)};
+}
+
+/* ============================ COQUE ============================ */
+const ONGLETS = [
+  ["bord","Bord",'<path d="M3 12l9-8 9 8"/><path d="M5 10v10h14V10"/>'],
+  ["depenses","Relevé",'<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>'],
+  ["prets","Prêts",'<path d="M17 7H7a3 3 0 100 6h10a3 3 0 110 6H7"/><path d="M12 3v18"/>'],
+  ["prevision","Prévision",'<path d="M3 18l5-6 4 4 8-9"/><path d="M15 7h5v5"/>'],
+  ["plus","Plus",'<circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>']
+];
+document.getElementById("nav").innerHTML = ONGLETS.map(([k,l,d])=>`
+  <button data-vue="${k}" role="tab" aria-selected="${k===vue}" aria-label="${l}">
+    <span class="pastille"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${d}</svg>
+    <span>${l}</span>
+  </button>`).join("");
+
+const VUES = ["bord","depenses","prets","prevision","plus","objectifs","reglages"];
+const PARENT = {objectifs:"plus", reglages:"plus"};
+
+function aller(v, pousser=true){
+  vue = v;
+  if(pousser && PARENT[v]) history.pushState({vue:v},"");
+  rendre();
+  window.scrollTo({top:0});
+}
+
+function rendre(){
+  document.getElementById("titreMois").textContent = nomMois(mois);
+  const actif = PARENT[vue] || vue;
+  document.querySelectorAll("#nav [data-vue]").forEach(b=>b.setAttribute("aria-selected", b.dataset.vue===actif));
+  VUES.forEach(v=>document.getElementById("vue-"+v).hidden = v!==vue);
+  ({bord:rendreBord, depenses:rendreDepenses, prets:rendrePrets, prevision:rendrePrevision,
+    plus:rendrePlus, objectifs:rendreObjectifs, reglages:rendreReglages}[vue])();
+}
+
+/* ---- BORD ---- */
+function rendreBord(){
+  const b = bilan(mois), prec = bilan(decalerMois(mois,-1));
+  const jours = nbJours(mois), auj = new Date();
+  const jour = clefMois(auj)===mois ? auj.getDate() : (mois<clefMois(auj) ? jours : 1);
+  const cibleEp = S.objectifs.reduce((s,o)=>s+effortMensuel(o),0);
+  const dettesDuMois = S.creances.filter(c=>c.sens==="dette" && resteDu(c)>0 && c.echeance && c.echeance.slice(0,7)<=mois)
+                                 .reduce((s,c)=>s+resteDu(c),0);
+  const budgetVivre = Math.max(b.entreesNettes - cibleEp - dettesDuMois, 0);
+  const parJour = jours-jour+1>0 ? (budgetVivre-b.courantes)/(jours-jour+1) : 0;
+  const partDep = budgetVivre>0 ? b.courantes/budgetVivre : 0;
+  const partTemps = jour/jours, avance = partDep-partTemps;
+  const coul = avance>.12?"var(--rouge)":avance>.03?"var(--ocre)":"var(--vert)";
+  const evol = prec.depenses>0 ? Math.round((b.depenses-prec.depenses)/prec.depenses*100) : null;
+  const tops = Object.entries(b.parCat).filter(([n])=>TYPE[n]!=="flux").sort((a,c)=>c[1]-a[1]);
+  const totTops = tops.reduce((s,x)=>s+x[1],0) || 1;
+  const chaudes = echeancesChaudes();
+
+  document.getElementById("vue-bord").innerHTML = `
+  ${chaudes.length?`<div class="alerte"><b>À régler bientôt</b><br>
+    ${chaudes.slice(0,4).map(x=>`${esc(x.c.personne)} — ${f(resteDu(x.c))} ${x.c.sens==="pret"?"à encaisser":"à payer"} ${x.j<0?`<b>(retard de ${-x.j} j)</b>`:x.j===0?"<b>aujourd'hui</b>":`dans ${x.j} j`}`).join("<br>")}
+  </div>`:""}
+
+  <div class="carte" style="background:var(--encre);color:#fff">
+    <div class="eti" style="color:#9DB3A8">Disponible par jour</div>
+    <div class="gros" style="font-size:33px;margin:8px 0 2px">${f(Math.max(parJour,0))}</div>
+    <div class="mini" style="color:#9DB3A8;margin-bottom:18px">jusqu'au ${jours} ${nomMois(mois).split(" ")[0]}</div>
+    <div style="position:relative;height:12px;border-radius:7px;background:#2C3F37">
+      <i style="display:block;width:${Math.min(partDep,1)*100}%;height:100%;background:${coul};border-radius:7px;transition:width .45s cubic-bezier(.2,.8,.2,1)"></i>
+      <span style="position:absolute;left:${partTemps*100}%;top:-5px;width:2.5px;height:22px;background:#fff;border-radius:2px"></span>
+    </div>
+    <div class="rangee mini" style="color:#9DB3A8;margin-top:9px">
+      <span>${budgetVivre>0?Math.round(partDep*100):0} % du budget</span><span>jour ${jour} / ${jours}</span>
+    </div>
+    <div style="margin-top:14px;padding-top:13px;border-top:1px solid #2C3F37;font-size:13px;line-height:1.5;color:${coul==="var(--vert)"?"#B6E3CF":"#F4D9A8"}">
+      ${budgetVivre<=0?"Notez vos entrées du mois pour activer le suivi."
+        :avance>.12?"Vous dépensez plus vite que le mois ne passe. Freinez sur les envies."
+        :avance>.03?"Légèrement en avance. Surveillez les prochains achats."
+        :"Rythme tenu. Le reste du mois est couvert."}
+    </div>
+  </div>
+
+  <div class="carte">
+    <div class="rangee" style="align-items:flex-start">
+      <div><div class="eti">Entrées</div><div class="gros" style="font-size:20px;color:var(--vert)">${f(b.entrees)}</div></div>
+      <div style="text-align:right"><div class="eti">Sorties</div><div class="gros" style="font-size:20px;color:var(--rouge)">${f(b.depenses)}</div></div>
+    </div>
+    <div class="rangee" style="border-top:1px solid var(--trait);margin-top:13px;padding-top:13px">
+      <span class="eti">Solde</span>
+      <span class="gros" style="color:${b.solde<0?"var(--rouge)":"var(--encre)"}">${f(b.solde)}</span>
+    </div>
+    ${evol!==null?`<div class="mini" style="margin-top:9px">${evol>0?"▲":"▼"} ${Math.abs(evol)} % par rapport à ${nomMois(decalerMois(mois,-1))}</div>`:""}
+  </div>
+
+  <div class="carte">
+    <h2>Équilibre 50 / 30 / 20</h2>
+    ${[["besoin","Besoins",.5],["envie","Envies",.3],["epargne","Épargne",.2]].map(([k,n,c])=>{
+      const base=b.entreesNettes, r=b.parType[k], cible=base*c, part=base>0?r/base:0;
+      const ko = k!=="epargne" && r>cible;
+      return `<div style="margin-bottom:15px">
+        <div class="rangee" style="font-size:13.5px">
+          <span><b>${n}</b> <span style="color:var(--encre2)">${Math.round(c*100)} %</span></span>
+          <span class="num" style="color:${ko?"var(--rouge)":"var(--encre2)"}">${f(r)}</span>
+        </div>
+        <div class="barre" style="position:relative;overflow:visible">
+          <i style="width:${Math.min(part,1)*100}%;background:${ko?"var(--rouge)":COUL[k]}"></i>
+          <span style="position:absolute;left:${c*100}%;top:-3px;width:2px;height:14px;background:var(--encre2)"></span>
+        </div>
+      </div>`;
+    }).join("")}
+  </div>
+
+  <div class="carte">
+    <h2>Où part l'argent</h2>
+    ${tops.length===0?'<div class="vide">Aucune dépense ce mois. Touchez le bouton vert pour en noter une.</div>':tops.map(([n,v])=>{
+      const bud=S.budgets[n]||0, ko=bud>0&&v>bud;
+      return `<div style="margin-bottom:13px">
+        <div class="rangee" style="font-size:13.5px">
+          <span>${esc(n)} ${ko?'<span class="puce" style="background:#FBE9E7;color:var(--rouge)">dépassé</span>':""}</span>
+          <span class="num">${f(v)}<span class="mini"> · ${Math.round(v/totTops*100)} %</span></span>
+        </div>
+        <div class="barre"><i style="width:${v/tops[0][1]*100}%;background:${ko?"var(--rouge)":COUL[TYPE[n]||"envie"]}"></i></div>
+        ${bud>0?`<div class="mini" style="margin-top:4px">budget ${f(bud)} · ${v>bud?"dépassement de "+f(v-bud):"reste "+f(bud-v)}</div>`:""}
+      </div>`;
+    }).join("")}
+    ${b.flux>0?`<div class="mini" style="margin-top:4px;padding-top:11px;border-top:1px solid var(--trait)">
+      Hors comptage : ${f(b.flux)} de mouvements de trésorerie.</div>`:""}
+  </div>
+
+  ${(totalCreances()||totalDettes())?`<div class="carte">
+    <h2>Créances et dettes</h2>
+    <div class="rangee" style="margin-bottom:9px"><span class="mini">On me doit</span><span class="num" style="color:var(--vert)">${f(totalCreances())}</span></div>
+    <div class="rangee" style="margin-bottom:9px"><span class="mini">Je dois</span><span class="num" style="color:var(--rouge)">${f(totalDettes())}</span></div>
+    <div class="rangee" style="border-top:1px solid var(--trait);padding-top:9px">
+      <span class="eti">Position nette</span>
+      <span class="num" style="font-weight:600;color:${totalCreances()-totalDettes()<0?"var(--rouge)":"var(--vert)"}">${f(totalCreances()-totalDettes())}</span>
+    </div>
+    ${dettesDuMois>0?`<div class="mini" style="margin-top:10px">${f(dettesDuMois)} de dettes à échéance ce mois — déjà retirés du disponible quotidien.</div>`:""}
+  </div>`:""}`;
+}
+
+/* ---- RELEVÉ ---- */
+let filtre = {cat:"", q:"", min:"", type:"tout", moyen:""};
+function rendreDepenses(){
+  const bm = bilan(mois);
+  let l = duMois(mois);
+  if(filtre.type!=="tout") l = l.filter(t=>t.type===filtre.type);
+  if(filtre.cat) l = l.filter(t=>t.categorie===filtre.cat);
+  if(filtre.moyen) l = l.filter(t=>t.moyen===filtre.moyen);
+  if(filtre.q) l = l.filter(t=>(t.libelle||"").toLowerCase().includes(filtre.q.toLowerCase()));
+  if(filtre.min) l = l.filter(t=>t.montant>=parseFloat(filtre.min));
+  l.sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  const tot = l.filter(x=>x.type==="depense").reduce((s,x)=>s+x.montant,0);
+
+  /* regroupement par jour, comme un relevé bancaire */
+  const parJour = {};
+  l.forEach(t=>{ (parJour[t.date] = parJour[t.date] || []).push(t); });
+
+  document.getElementById("vue-depenses").innerHTML = `
+  <div class="carte">
+    <h2>Filtrer</h2>
+    <input id="qRech" placeholder="Rechercher un libellé" value="${esc(filtre.q)}" style="margin-bottom:10px">
+    <div class="grille" style="margin-bottom:10px">
+      <select id="qCat" aria-label="Catégorie"><option value="">Toutes catégories</option>${CATS.map(([n])=>`<option ${filtre.cat===n?"selected":""}>${n}</option>`).join("")}</select>
+      <select id="qType" aria-label="Type">
+        <option value="tout" ${filtre.type==="tout"?"selected":""}>Tout</option>
+        <option value="depense" ${filtre.type==="depense"?"selected":""}>Dépenses</option>
+        <option value="entree" ${filtre.type==="entree"?"selected":""}>Entrées</option>
+      </select>
+    </div>
+    <div class="grille">
+      <input id="qMin" type="number" inputmode="decimal" placeholder="Montant min." value="${esc(filtre.min)}">
+      <select id="qMoyen" aria-label="Moyen"><option value="">Tous moyens</option>${MOYENS.map(m=>`<option ${filtre.moyen===m?"selected":""}>${m}</option>`).join("")}</select>
+    </div>
+  </div>
+
+  <div class="carte">
+    <h2>Par moyen de paiement</h2>
+    ${Object.keys(bm.parMoyen).length===0?'<div class="vide">Rien à répartir ce mois.</div>'
+      :Object.entries(bm.parMoyen).sort((a,c)=>c[1]-a[1]).map(([m,v])=>`
+      <div style="margin-bottom:12px">
+        <div class="rangee" style="font-size:13.5px"><span>${esc(m)}</span><span class="num">${f(v)}<span class="mini"> · ${Math.round(v/bm.depenses*100)} %</span></span></div>
+        <div class="barre"><i style="width:${v/bm.depenses*100}%;background:var(--encre)"></i></div>
+      </div>`).join("")}
+  </div>
+
+  <div class="carte">
+    <div class="rangee" style="margin-bottom:6px">
+      <h2 style="margin:0">${l.length} opération${l.length>1?"s":""}</h2>
+      <span class="num" style="font-weight:600;color:var(--rouge)">${f(tot)}</span>
+    </div>
+    ${l.length===0?'<div class="vide">Aucun résultat pour ce filtre.</div>'
+      :Object.entries(parJour).map(([d,ops])=>`
+        <div class="eti" style="margin:14px 0 2px">${new Date(d).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</div>
+        ${ops.map(ligneHTML).join("")}`).join("")}
+  </div>`;
+
+  const r = document.getElementById("qRech");
+  r.oninput = e=>{ filtre.q=e.target.value; const p=e.target.selectionStart; rendreDepenses();
+                   const n=document.getElementById("qRech"); n.focus(); n.setSelectionRange(p,p); };
+  document.getElementById("qCat").onchange = e=>{ filtre.cat=e.target.value; rendreDepenses(); };
+  document.getElementById("qType").onchange = e=>{ filtre.type=e.target.value; rendreDepenses(); };
+  document.getElementById("qMin").oninput = e=>{ filtre.min=e.target.value; rendreDepenses(); };
+  document.getElementById("qMoyen").onchange = e=>{ filtre.moyen=e.target.value; rendreDepenses(); };
+}
+
+function ligneHTML(t){
+  return `<div class="ligne">
+    <div style="min-width:0;flex:1">
+      <div style="font-size:14.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.libelle||t.categorie||"Sans libellé")}</div>
+      <div class="mini">${esc(t.categorie||"Entrée")}${t.moyen?" · "+esc(t.moyen):""}${t.fixe?" · fixe":""}</div>
+    </div>
+    <span class="num" style="font-weight:600;font-size:14.5px;color:${t.type==="entree"?"var(--vert)":"var(--rouge)"}">${t.type==="entree"?"+":"−"}${f(t.montant)}</span>
+    <button class="sup" data-sup="${t.id}" aria-label="Supprimer ${esc(t.libelle||"")}">×</button>
+  </div>`;
+}
+
+/* ---- PRÊTS ---- */
+function rendrePrets(){
+  const prets = S.creances.filter(c=>c.sens==="pret");
+  const dettes = S.creances.filter(c=>c.sens==="dette");
+  const chaudes = echeancesChaudes();
+
+  const bloc = (l,titre,vide,positif) => `
+  <div class="carte">
+    <div class="rangee" style="margin-bottom:10px">
+      <h2 style="margin:0">${titre}</h2>
+      <span class="num" style="font-weight:600;color:${positif?"var(--vert)":"var(--rouge)"}">${f(l.reduce((s,c)=>s+resteDu(c),0))}</span>
+    </div>
+    ${l.length===0?`<div class="vide">${vide}</div>`:l.slice().sort((a,b)=>(a.echeance||"9999").localeCompare(b.echeance||"9999")).map(c=>{
+      const r=resteDu(c), j=joursRestants(c.echeance), part=c.montant>0?(c.regle||0)/c.montant:0;
+      const etat = r===0?["soldé","var(--vert)","var(--vert-clair)"]
+        : j===null?["sans échéance","var(--encre2)","var(--papier)"]
+        : j<0?[`retard ${-j} j`,"var(--rouge)","#FBE9E7"]
+        : j<=7?[`dans ${j} j`,"var(--ocre)","#FBF2DC"]
+        : [`dans ${j} j`,"var(--encre2)","var(--papier)"];
+      return `<div style="padding:14px 0;border-bottom:1px solid var(--trait)">
+        <div class="rangee" style="margin-bottom:6px">
+          <span style="font-size:15px;font-weight:600">${esc(c.personne)}</span>
+          <button class="sup" data-supcre="${c.id}" aria-label="Supprimer">×</button>
+        </div>
+        <div class="rangee" style="font-size:13.5px;margin-bottom:2px">
+          <span class="num">${r===0?"Soldé":"Reste "+f(r)}<span class="mini"> sur ${f(c.montant)}</span></span>
+          <span class="puce" style="background:${etat[2]};color:${etat[1]}">${etat[0]}</span>
+        </div>
+        <div class="barre"><i style="width:${Math.min(part,1)*100}%;background:${r===0?"var(--vert)":etat[1]}"></i></div>
+        ${c.note?`<div class="mini" style="margin-top:7px">${esc(c.note)}</div>`:""}
+        <div class="mini" style="margin-top:4px">Depuis le ${new Date(c.date).toLocaleDateString("fr-FR")}${c.echeance?" · échéance "+new Date(c.echeance).toLocaleDateString("fr-FR"):""}</div>
+        ${r>0?`<div style="display:flex;gap:8px;margin-top:11px">
+          <input type="number" inputmode="decimal" placeholder="${c.sens==="pret"?"Montant reçu":"Montant payé"}" data-reg="${c.id}">
+          <button class="btn ${c.sens==="pret"?"vert":""}" style="width:auto;padding:0 20px;flex:0 0 auto" data-regbtn="${c.id}">${c.sens==="pret"?"Encaisser":"Payer"}</button>
+        </div>`:""}
+      </div>`;
+    }).join("")}
+  </div>`;
+
+  document.getElementById("vue-prets").innerHTML = `
+  ${chaudes.length?`<div class="alerte"><b>Échéances proches</b><br>
+    ${chaudes.map(x=>`${esc(x.c.personne)} — ${f(resteDu(x.c))} ${x.c.sens==="pret"?"à encaisser":"à payer"} ${x.j<0?`<b>(retard de ${-x.j} j)</b>`:x.j===0?"<b>aujourd'hui</b>":`dans ${x.j} j`}`).join("<br>")}
+  </div>`:""}
+
+  <div class="carte">
+    <div class="rangee" style="margin-bottom:13px">
+      <div><div class="eti">On me doit</div><div class="gros" style="font-size:20px;color:var(--vert)">${f(totalCreances())}</div></div>
+      <div style="text-align:right"><div class="eti">Je dois</div><div class="gros" style="font-size:20px;color:var(--rouge)">${f(totalDettes())}</div></div>
+    </div>
+    <div class="rangee" style="border-top:1px solid var(--trait);padding-top:13px">
+      <span class="eti">Position nette</span>
+      <span class="gros" style="font-size:21px;color:${totalCreances()-totalDettes()<0?"var(--rouge)":"var(--vert)"}">${f(totalCreances()-totalDettes())}</span>
+    </div>
+  </div>
+
+  <div class="carte">
+    <h2>Nouvelle ligne</h2>
+    <div class="seg" style="margin-bottom:12px">
+      <button id="sPret" aria-selected="${sensSaisie==="pret"}">J'ai prêté</button>
+      <button id="sDette" aria-selected="${sensSaisie==="dette"}">J'ai emprunté</button>
+    </div>
+    <input id="cPersonne" placeholder="Nom de la personne" style="margin-bottom:10px">
+    <input id="cMontant" type="number" inputmode="decimal" placeholder="Montant" style="margin-bottom:10px">
+    <div class="grille" style="margin-bottom:10px">
+      <input id="cDate" type="date" value="${aujISO()}" aria-label="Date">
+      <input id="cEcheance" type="date" aria-label="Échéance">
+    </div>
+    <div class="grille" style="margin-bottom:10px">
+      <input id="cNote" placeholder="Motif">
+      <select id="cMoyen" aria-label="Moyen">${MOYENS.map(m=>`<option>${m}</option>`).join("")}</select>
+    </div>
+    <label class="rangee" style="justify-content:flex-start;gap:12px;margin-bottom:14px;min-height:48px">
+      <input id="cFlux" type="checkbox" checked>
+      <span style="font-size:14px">L'argent a déjà bougé — l'inscrire au relevé</span>
+    </label>
+    <button class="btn" id="cAjouter">Enregistrer</button>
+    <div class="mini" style="margin-top:10px">Prêts et remboursements sont classés en mouvements de trésorerie : au relevé, mais hors besoins, envies et épargne.</div>
+  </div>
+
+  ${bloc(prets,"Ce qu'on me doit","Aucun prêt en cours.",true)}
+  ${bloc(dettes,"Ce que je dois","Aucune dette en cours.",false)}`;
+
+  document.getElementById("sPret").onclick = ()=>{ sensSaisie="pret"; rendrePrets(); };
+  document.getElementById("sDette").onclick = ()=>{ sensSaisie="dette"; rendrePrets(); };
+  document.getElementById("cAjouter").onclick = ()=>{
+    const personne = document.getElementById("cPersonne").value.trim();
+    const montant = parseFloat(document.getElementById("cMontant").value);
+    if(!personne || !montant || montant<=0){ toast("Nom et montant sont requis"); return; }
+    const date = document.getElementById("cDate").value || aujISO();
+    const moyen = document.getElementById("cMoyen").value;
+    S.creances.push({id:uid(),sens:sensSaisie,personne,montant,regle:0,date,
+      echeance:document.getElementById("cEcheance").value||"",
+      note:document.getElementById("cNote").value.trim(),moyen});
+    if(document.getElementById("cFlux").checked){
+      S.tx.push(sensSaisie==="pret"
+        ? {id:uid(),type:"depense",montant,categorie:"Prêt accordé",libelle:"Prêt à "+personne,date,moyen,fixe:false}
+        : {id:uid(),type:"entree",montant,categorie:"Emprunt reçu",libelle:"Emprunt de "+personne,date,moyen,fixe:false});
+    }
+    vibrer(12); sauver(); rendre(); toast(sensSaisie==="pret"?"Prêt enregistré":"Dette enregistrée");
+  };
+  document.querySelectorAll("[data-regbtn]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id=btn.dataset.regbtn, champ=document.querySelector(`[data-reg="${id}"]`);
+      const v=parseFloat(champ.value), c=S.creances.find(x=>x.id===id);
+      if(!v||v<=0||!c) return;
+      c.regle = Math.min((c.regle||0)+v, c.montant);
+      S.tx.push(c.sens==="pret"
+        ? {id:uid(),type:"entree",montant:v,categorie:"Remboursement reçu",libelle:c.personne+" rembourse",date:aujISO(),moyen:c.moyen||"Espèces",fixe:false}
+        : {id:uid(),type:"depense",montant:v,categorie:"Dette remboursée",libelle:"Remboursement à "+c.personne,date:aujISO(),moyen:c.moyen||"Espèces",fixe:false});
+      vibrer(12); sauver(); rendre(); toast(resteDu(c)===0?"Ligne soldée":"Mouvement enregistré");
+    };
+  });
+}
+
+/* ---- PRÉVISION ---- */
+function rendrePrevision(){
+  const b = bilan(mois), jours = nbJours(mois), auj = new Date();
+  const jour = clefMois(auj)===mois ? auj.getDate() : jours;
+  const restants = Math.max(jours-jour,0);
+  const moyJour = jour>0 ? b.courantes/jour : 0;
+  const projection = b.courantes + moyJour*restants;
+  const soldeProj = b.entreesNettes - projection - b.epargne;
+  const rupture = moyJour>0 ? Math.floor((b.entrees-b.depenses)/moyJour) : null;
+  const moy3 = [1,2,3].map(i=>bilan(decalerMois(mois,-i))).filter(h=>h.nb>0);
+  const moyDep = moy3.length ? moy3.reduce((s,h)=>s+h.depenses,0)/moy3.length : 0;
+  const moyEnt = moy3.length ? moy3.reduce((s,h)=>s+h.entrees,0)/moy3.length : 0;
+  const fixes = {};
+  S.tx.filter(t=>t.fixe && t.type==="depense").forEach(t=>{ fixes[t.libelle||t.categorie]=t.montant; });
+  const totFixes = Object.values(fixes).reduce((s,v)=>s+v,0);
+  const histo = [5,4,3,2,1,0].map(i=>({c:decalerMois(mois,-i), b:bilan(decalerMois(mois,-i))}));
+  const maxH = Math.max(1,...histo.map(h=>Math.max(h.b.entrees,h.b.depenses)));
+  const engagements = S.creances.filter(c=>resteDu(c)>0).sort((a,b)=>(a.echeance||"9999").localeCompare(b.echeance||"9999"));
+
+  document.getElementById("vue-prevision").innerHTML = `
+  <div class="carte">
+    <h2>Fin de mois projetée</h2>
+    <div class="rangee" style="margin-bottom:11px">
+      <span class="eti">Dépenses attendues</span><span class="gros" style="font-size:21px">${f(projection)}</span>
+    </div>
+    <div class="rangee" style="border-top:1px solid var(--trait);padding-top:11px">
+      <span class="eti">Solde prévisionnel</span>
+      <span class="gros" style="font-size:21px;color:${soldeProj<0?"var(--rouge)":"var(--vert)"}">${f(soldeProj)}</span>
+    </div>
+    <div class="mini" style="margin-top:11px">
+      ${f(b.courantes)} déjà dépensés + ${f(moyJour)} par jour × ${restants} jours restants.
+      ${soldeProj<0?"<b style='color:var(--rouge)'> À ce rythme, le mois finit en déficit.</b>":""}
+      ${rupture!==null&&rupture<restants?`<br><b style="color:#8A6A14">Solde à zéro dans environ ${rupture} jour${rupture>1?"s":""}.</b>`:""}
+    </div>
+  </div>
+
+  <div class="carte">
+    <h2>Engagements à venir</h2>
+    ${engagements.length===0?'<div class="vide">Aucun prêt ni dette en cours.</div>'
+      :engagements.map(c=>{const j=joursRestants(c.echeance);
+        return `<div class="ligne">
+          <div style="min-width:0;flex:1">
+            <div style="font-size:14.5px">${esc(c.personne)}</div>
+            <div class="mini">${c.sens==="pret"?"à encaisser":"à payer"}${c.echeance?` · ${j<0?"retard de "+(-j)+" j":"dans "+j+" j"}`:" · sans échéance"}</div>
+          </div>
+          <span class="num" style="font-weight:600;color:${c.sens==="pret"?"var(--vert)":"var(--rouge)"}">${c.sens==="pret"?"+":"−"}${f(resteDu(c))}</span>
+        </div>`;}).join("")
+      +`<div class="rangee" style="padding-top:12px"><span class="eti">Effet net</span>
+        <span class="num" style="font-weight:600;color:${totalCreances()-totalDettes()<0?"var(--rouge)":"var(--vert)"}">${f(totalCreances()-totalDettes())}</span></div>`}
+  </div>
+
+  <div class="carte">
+    <h2>Charges fixes</h2>
+    ${Object.keys(fixes).length===0?'<div class="vide">Cochez « charge fixe » à la saisie pour voir ici ce qui tombe chaque mois.</div>'
+      :Object.entries(fixes).map(([n,v])=>`<div class="ligne"><span style="font-size:14.5px">${esc(n)}</span><span class="num">${f(v)}</span></div>`).join("")
+       +`<div class="rangee" style="padding-top:12px"><span class="eti">Total engagé</span><span class="num" style="font-weight:600">${f(totFixes)}</span></div>
+         <div class="mini" style="margin-top:9px">Reste après charges fixes : <b>${f(Math.max(b.entreesNettes-totFixes,0))}</b></div>`}
+  </div>
+
+  <div class="carte">
+    <h2>Moyennes sur 3 mois</h2>
+    <div class="rangee" style="margin-bottom:9px"><span class="mini">Entrées</span><span class="num">${f(moyEnt)}</span></div>
+    <div class="rangee" style="margin-bottom:9px"><span class="mini">Dépenses</span><span class="num">${f(moyDep)}</span></div>
+    <div class="rangee" style="border-top:1px solid var(--trait);padding-top:9px">
+      <span class="eti">Capacité d'épargne</span>
+      <span class="num" style="font-weight:600;color:${moyEnt-moyDep<0?"var(--rouge)":"var(--vert)"}">${f(moyEnt-moyDep)}</span>
+    </div>
+  </div>
+
+  <div class="carte">
+    <h2>Six derniers mois</h2>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:134px">
+      ${histo.map(h=>`<div style="flex:1;text-align:center">
+        <div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;height:104px">
+          <div style="width:11px;height:${h.b.entrees/maxH*100}%;background:var(--vert);border-radius:3px 3px 0 0"></div>
+          <div style="width:11px;height:${h.b.depenses/maxH*100}%;background:var(--rouge);border-radius:3px 3px 0 0"></div>
+        </div>
+        <div class="mini" style="margin-top:7px;font-size:10px">${h.c.slice(5)}</div>
+      </div>`).join("")}
+    </div>
+    <div class="mini" style="margin-top:9px">Vert : entrées · Rouge : dépenses</div>
+  </div>`;
+}
+
+/* ---- PLUS ---- */
+function rendrePlus(){
+  const items = [
+    ["objectifs","Objectifs d'épargne",`${S.objectifs.length} en cours`],
+    ["reglages","Budgets et sauvegarde","Plafonds, devise, export"]
+  ];
+  document.getElementById("vue-plus").innerHTML = `
+  <div class="carte" style="padding:4px 16px">
+    ${items.map(([k,t,s])=>`
+      <button data-aller="${k}" style="width:100%;border:none;background:none;text-align:left;padding:17px 0;border-bottom:1px solid var(--trait);display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:64px">
+        <span><span style="font-size:15.5px;font-weight:600;display:block">${t}</span><span class="mini">${s}</span></span>
+        <span style="color:var(--encre2);font-size:22px">›</span>
+      </button>`).join("")}
+    <button data-aller="installer" style="width:100%;border:none;background:none;text-align:left;padding:17px 0;display:flex;justify-content:space-between;align-items:center;min-height:64px">
+      <span><span style="font-size:15.5px;font-weight:600;display:block">Installer sur l'écran d'accueil</span><span class="mini">Ouvrir en plein écran, sans barre de navigateur</span></span>
+      <span style="color:var(--encre2);font-size:22px">›</span>
+    </button>
+  </div>
+  <div class="carte">
+    <h2>Mémo</h2>
+    <div class="mini">
+      Le bouton vert ouvre la saisie depuis n'importe quel écran.<br>
+      Les flèches en haut changent de mois.<br>
+      Vos données restent dans ce téléphone : exportez-les de temps en temps depuis Budgets et sauvegarde.
+    </div>
+  </div>`;
+  document.querySelectorAll("[data-aller]").forEach(b=>b.onclick = ()=>{
+    if(b.dataset.aller==="installer"){
+      toast("Menu ⋮ du navigateur → Installer l'application");
+    } else aller(b.dataset.aller);
+  });
+}
+
+/* ---- OBJECTIFS ---- */
+function rendreObjectifs(){
+  const b = bilan(mois);
+  document.getElementById("vue-objectifs").innerHTML = `
+  <button class="btn clair" id="retour1" style="margin-bottom:12px">‹ Retour</button>
+  <div class="carte">
+    <h2>Nouvel objectif</h2>
+    <input id="oNom" placeholder="Terrain, voyage, fonds d'urgence…" style="margin-bottom:10px">
+    <input id="oCible" type="number" inputmode="decimal" placeholder="Montant visé" style="margin-bottom:10px">
+    <input id="oEcheance" type="date" style="margin-bottom:12px" aria-label="Échéance">
+    <button class="btn vert" id="oAjouter">Créer l'objectif</button>
+  </div>
+  ${S.objectifs.length===0?'<div class="carte"><div class="vide">Aucun objectif. Fixez-en un : l\'app calcule l\'effort mensuel et le retire de votre budget de vie.</div></div>':""}
+  ${S.objectifs.map(o=>{
+    const part = o.cible>0?Math.min(o.verse/o.cible,1):0, reste = Math.max(o.cible-o.verse,0);
+    let txt="";
+    if(o.echeance && reste>0){
+      const d = Math.max(Math.ceil((new Date(o.echeance)-new Date())/(1000*60*60*24*30.4)),1);
+      txt = `${f(effortMensuel(o))} par mois pendant ${d} mois`;
+    }
+    return `<div class="carte">
+      <div class="rangee" style="margin-bottom:9px">
+        <h2 style="margin:0">${esc(o.nom)}</h2>
+        <button class="sup" data-supobj="${o.id}" aria-label="Supprimer">×</button>
+      </div>
+      <div class="rangee" style="font-size:13.5px">
+        <span class="num">${f(o.verse)} sur ${f(o.cible)}</span>
+        <span class="puce">${Math.round(part*100)} %</span>
+      </div>
+      <div class="barre"><i style="width:${part*100}%;background:var(--vert)"></i></div>
+      <div class="mini" style="margin:9px 0 12px">${o.echeance?`Échéance ${new Date(o.echeance).toLocaleDateString("fr-FR")}${txt?" — "+txt:""}`:"Sans échéance"}${reste===0?" — atteint":""}</div>
+      ${reste>0?`<div style="display:flex;gap:8px">
+        <input type="number" inputmode="decimal" placeholder="Verser" data-vers="${o.id}">
+        <button class="btn vert" style="width:auto;padding:0 22px;flex:0 0 auto" data-versbtn="${o.id}">Verser</button>
+      </div>`:""}
+    </div>`;
+  }).join("")}
+  <div class="carte"><div class="mini">Épargne notée ce mois : <b>${f(b.epargne)}</b>. Chaque versement crée sa ligne au relevé.</div></div>`;
+
+  document.getElementById("retour1").onclick = ()=>history.back();
+  document.getElementById("oAjouter").onclick = ()=>{
+    const nom = document.getElementById("oNom").value.trim();
+    const cible = parseFloat(document.getElementById("oCible").value);
+    if(!nom || !cible){ toast("Nom et montant visé sont requis"); return; }
+    S.objectifs.push({id:uid(),nom,cible,verse:0,echeance:document.getElementById("oEcheance").value||""});
+    vibrer(12); sauver(); rendre(); toast("Objectif créé");
+  };
+  document.querySelectorAll("[data-versbtn]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id=btn.dataset.versbtn, v=parseFloat(document.querySelector(`[data-vers="${id}"]`).value);
+      if(!v||v<=0) return;
+      const o = S.objectifs.find(x=>x.id===id);
+      o.verse += v;
+      S.tx.push({id:uid(),type:"depense",montant:v,categorie:"Épargne",libelle:"Objectif — "+o.nom,date:aujISO(),moyen:"Virement",fixe:false});
+      vibrer(12); sauver(); rendre(); toast("Versement enregistré");
+    };
+  });
+}
+
+/* ---- RÉGLAGES ---- */
+function rendreReglages(){
+  document.getElementById("vue-reglages").innerHTML = `
+  <button class="btn clair" id="retour2" style="margin-bottom:12px">‹ Retour</button>
+  <div class="carte">
+    <h2>Plafonds par catégorie</h2>
+    <div class="mini" style="margin-bottom:12px">Un plafond mensuel déclenche une alerte sur le tableau de bord.</div>
+    ${CATS.filter(([,t])=>t==="besoin"||t==="envie").map(([n])=>`
+      <div class="rangee" style="margin-bottom:9px">
+        <span style="font-size:14px;flex:1">${n}</span>
+        <input type="number" inputmode="decimal" data-bud="${n}" value="${S.budgets[n]||""}" placeholder="—" style="width:130px;text-align:right" aria-label="Plafond ${n}">
+      </div>`).join("")}
+  </div>
+  <div class="carte">
+    <h2>Devise</h2>
+    <select id="rDevise" aria-label="Devise">${["FCFA","€","$","MAD","CAD"].map(d=>`<option ${S.devise===d?"selected":""}>${d}</option>`).join("")}</select>
+  </div>
+  <div class="carte">
+    <h2>Sauvegarde</h2>
+    <div class="mini" style="margin-bottom:12px">Vos données vivent dans ce téléphone. Exportez régulièrement.</div>
+    <button class="btn" id="rCsv" style="margin-bottom:10px">Relevé CSV</button>
+    <button class="btn clair" id="rJson" style="margin-bottom:14px">Sauvegarde complète</button>
+    <input type="file" id="rFichier" accept=".json" style="margin-bottom:10px">
+    <button class="btn vert" id="rRestaurer">Restaurer depuis un fichier</button>
+  </div>`;
+
+  document.getElementById("retour2").onclick = ()=>history.back();
+  document.querySelectorAll("[data-bud]").forEach(i=>{
+    i.onchange = ()=>{ const v=parseFloat(i.value); if(v>0) S.budgets[i.dataset.bud]=v; else delete S.budgets[i.dataset.bud]; sauver(); };
+  });
+  document.getElementById("rDevise").onchange = e=>{ S.devise=e.target.value; sauver(); rendre(); };
+  document.getElementById("rCsv").onclick = ()=>{
+    const l = ["Date;Type;Categorie;Libelle;Montant;Moyen;Fixe"];
+    S.tx.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>
+      l.push([t.date,t.type,t.categorie||"",(t.libelle||"").replace(/;/g,","),t.montant,t.moyen||"",t.fixe?"oui":""].join(";")));
+    if(S.creances.length){
+      l.push("", "Sens;Personne;Montant;Regle;Reste;Date;Echeance;Note");
+      S.creances.forEach(c=>l.push([c.sens==="pret"?"prete":"empruntee",(c.personne||"").replace(/;/g,","),c.montant,c.regle||0,resteDu(c),c.date,c.echeance||"",(c.note||"").replace(/;/g,",")].join(";")));
+    }
+    telecharger(l.join("\n"),"releve-budget.csv","text/csv");
+  };
+  document.getElementById("rJson").onclick = ()=> telecharger(JSON.stringify(S),"sauvegarde-budget.json","application/json");
+  document.getElementById("rRestaurer").onclick = ()=>{
+    const fi = document.getElementById("rFichier").files[0];
+    if(!fi){ toast("Choisissez d'abord un fichier"); return; }
+    const r = new FileReader();
+    r.onload = ()=>{ try{ S = Object.assign({tx:[],budgets:{},objectifs:[],creances:[],devise:"FCFA"}, JSON.parse(r.result)); sauver(); rendre(); toast("Données restaurées"); }
+                     catch(e){ toast("Fichier illisible"); } };
+    r.readAsText(fi);
+  };
+}
+function telecharger(txt,nom,type){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿"+txt],{type:type+";charset=utf-8"}));
+  a.download = nom; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ============================ FEUILLE DE SAISIE ============================ */
+const feuille = document.getElementById("feuille");
+const voile = document.getElementById("voile");
+let feuilleOuverte = false;
+
+function ouvrirFeuille(){
+  if(feuilleOuverte) return;
+  feuilleOuverte = true;
+  history.pushState({feuille:true},"");
+  document.getElementById("fDate").value = aujISO();
+  voile.classList.add("ouvert"); feuille.classList.add("ouvert");
+  document.body.style.overflow = "hidden";
+  setTimeout(()=>document.getElementById("fMontant").focus(), 260);
+}
+function fermerFeuille(viaHistorique){
+  if(!feuilleOuverte) return;
+  feuilleOuverte = false;
+  voile.classList.remove("ouvert"); feuille.classList.remove("ouvert");
+  document.body.style.overflow = "";
+  document.getElementById("fMontant").blur();
+  if(!viaHistorique && history.state && history.state.feuille) history.back();
+}
+
+document.getElementById("fab").onclick = ()=>{ vibrer(8); ouvrirFeuille(); };
+voile.onclick = ()=>fermerFeuille();
+document.getElementById("fFermer").onclick = ()=>fermerFeuille();
+
+/* glisser vers le bas pour fermer */
+let yDepart = null;
+feuille.addEventListener("touchstart", e=>{ if(feuille.scrollTop<=0) yDepart = e.touches[0].clientY; }, {passive:true});
+feuille.addEventListener("touchmove", e=>{
+  if(yDepart===null) return;
+  const d = e.touches[0].clientY - yDepart;
+  if(d>0) feuille.style.transform = `translateY(${d}px)`;
+}, {passive:true});
+feuille.addEventListener("touchend", e=>{
+  if(yDepart===null) return;
+  const d = (e.changedTouches[0].clientY - yDepart);
+  feuille.style.transform = "";
+  if(d>110) fermerFeuille();
+  yDepart = null;
+}, {passive:true});
+
+/* bouton Retour d'Android */
+window.addEventListener("popstate", e=>{
+  if(feuilleOuverte){ fermerFeuille(true); return; }
+  const v = (e.state && e.state.vue) ? e.state.vue : (PARENT[vue] ? PARENT[vue] : vue);
+  if(PARENT[vue]){ vue = PARENT[vue]; rendre(); }
+});
+
+/* jetons de montant */
+document.getElementById("jetons").innerHTML = JETONS.map(v=>`<button data-jeton="${v}">+${v.toLocaleString("fr-FR")}</button>`).join("");
+document.querySelectorAll("[data-jeton]").forEach(b=>{
+  b.onclick = ()=>{
+    const c = document.getElementById("fMontant");
+    c.value = (parseFloat(c.value)||0) + parseFloat(b.dataset.jeton);
+    majUnite(); vibrer(6);
+  };
+});
+function majUnite(){
+  const v = parseFloat(document.getElementById("fMontant").value);
+  document.getElementById("uniteMontant").textContent = v>0 ? f(v) : S.devise;
+}
+document.getElementById("fMontant").oninput = majUnite;
+
+document.getElementById("tDepense").onclick = ()=>basculer("depense");
+document.getElementById("tEntree").onclick = ()=>basculer("entree");
+function basculer(t){
+  typeSaisie = t;
+  document.getElementById("tDepense").setAttribute("aria-selected", t==="depense");
+  document.getElementById("tEntree").setAttribute("aria-selected", t==="entree");
+  document.getElementById("fCategorie").style.display = t==="depense" ? "" : "none";
+  document.getElementById("fAjouter").textContent = t==="depense" ? "Enregistrer la dépense" : "Enregistrer l'entrée";
+}
+
+document.getElementById("fCategorie").innerHTML = CATS.filter(([,t])=>t!=="flux").map(([n])=>`<option>${n}</option>`).join("");
+document.getElementById("fMoyen").innerHTML = MOYENS.map(m=>`<option>${m}</option>`).join("");
+
+document.getElementById("fAjouter").onclick = ()=>{
+  const m = parseFloat(String(document.getElementById("fMontant").value).replace(",","."));
+  if(!m || m<=0){ toast("Indiquez un montant"); document.getElementById("fMontant").focus(); return; }
+  const op = {
+    id:uid(), type:typeSaisie, montant:m,
+    categorie: typeSaisie==="depense" ? document.getElementById("fCategorie").value : "",
+    libelle: document.getElementById("fLibelle").value.trim(),
+    date: document.getElementById("fDate").value || aujISO(),
+    moyen: document.getElementById("fMoyen").value,
+    fixe: document.getElementById("fFixe").checked
+  };
+  S.tx.push(op); derniere = op.id;
+  vibrer(14); sauver();
+  document.getElementById("fMontant").value = "";
+  document.getElementById("fLibelle").value = "";
+  document.getElementById("fFixe").checked = false;
+  majUnite();
+  fermerFeuille();
+  rendre();
+  toast(`${typeSaisie==="depense"?"Dépense":"Entrée"} de ${f(m)} notée`, "Annuler", ()=>{
+    S.tx = S.tx.filter(t=>t.id!==derniere); sauver(); rendre();
+  });
+};
+
+/* ============================ MESSAGE ÉPHÉMÈRE ============================ */
+const elToast = document.getElementById("toast");
+function toast(txt, libelleAction, action){
+  clearTimeout(minuteurToast);
+  document.getElementById("toastTxt").textContent = txt;
+  const btn = document.getElementById("toastAct");
+  if(action){ btn.hidden = false; btn.textContent = libelleAction;
+    btn.onclick = ()=>{ action(); elToast.classList.remove("ouvert"); };
+  } else btn.hidden = true;
+  elToast.classList.add("ouvert");
+  minuteurToast = setTimeout(()=>elToast.classList.remove("ouvert"), action?5200:2800);
+}
+
+/* ============================ ÉVÉNEMENTS ============================ */
+document.getElementById("prev").onclick = ()=>{ mois=decalerMois(mois,-1); vibrer(6); rendre(); };
+document.getElementById("next").onclick = ()=>{ mois=decalerMois(mois,1); vibrer(6); rendre(); };
+document.querySelectorAll("#nav [data-vue]").forEach(b=> b.onclick = ()=>{ vibrer(6); aller(b.dataset.vue, false); });
+
+document.addEventListener("click", e=>{
+  const s = e.target.closest("[data-sup]");
+  if(s){
+    const op = S.tx.find(t=>t.id===s.dataset.sup);
+    S.tx = S.tx.filter(t=>t.id!==s.dataset.sup); vibrer(10); sauver(); rendre();
+    toast("Opération supprimée","Rétablir",()=>{ S.tx.push(op); sauver(); rendre(); });
+  }
+  const o = e.target.closest("[data-supobj]");
+  if(o){ const ob=S.objectifs.find(x=>x.id===o.dataset.supobj);
+    S.objectifs = S.objectifs.filter(x=>x.id!==o.dataset.supobj); vibrer(10); sauver(); rendre();
+    toast("Objectif supprimé","Rétablir",()=>{ S.objectifs.push(ob); sauver(); rendre(); }); }
+  const c = e.target.closest("[data-supcre]");
+  if(c){ const cr=S.creances.find(x=>x.id===c.dataset.supcre);
+    S.creances = S.creances.filter(x=>x.id!==c.dataset.supcre); vibrer(10); sauver(); rendre();
+    toast("Ligne supprimée","Rétablir",()=>{ S.creances.push(cr); sauver(); rendre(); }); }
+});
+
+/* ombre de la barre du haut au défilement */
+const haut = document.getElementById("haut");
+window.addEventListener("scroll", ()=>haut.classList.toggle("colle", window.scrollY>6), {passive:true});
+
+/* empêcher le zoom par double frappe */
+let dernierToucher = 0;
+document.addEventListener("touchend", e=>{
+  const t = Date.now();
+  if(t - dernierToucher < 320) e.preventDefault();
+  dernierToucher = t;
+}, {passive:false});
+
+/* ============================ DÉMARRAGE ============================ */
+if(!charger()) majEtat("⚠ Stockage inaccessible", true);
+else majEtat(S.tx.length ? `${S.tx.length} opération${S.tx.length>1?"s":""} enregistrée${S.tx.length>1?"s":""}` : "Aucune donnée pour l'instant");
+history.replaceState({vue:"bord"},"");
+basculer("depense");
+majUnite();
+rendre();
+</script>
+</body>
+</html>
