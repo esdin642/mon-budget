@@ -247,17 +247,51 @@ let derniere = null;          /* dernière opération, pour l'annulation */
 let minuteurToast = null;
 
 /* ============================ PERSISTANCE ============================ */
+const CLE_BAK = CLE + "-bak";
+const CLE_EXP = CLE + "-export";
+
 function charger(){
-  try{ const v = localStorage.getItem(CLE); if(v) S = Object.assign(S, JSON.parse(v)); return true; }
-  catch(e){ return false; }
+  /* on tente la clé principale, puis la copie de secours */
+  for(const k of [CLE, CLE_BAK]){
+    try{
+      const v = localStorage.getItem(k);
+      if(v){
+        const d = JSON.parse(v);
+        if(d && Array.isArray(d.tx)){ S = Object.assign(S, d); return true; }
+      }
+    }catch(e){ /* clé illisible, on essaie la suivante */ }
+  }
+  return !!localStorage.getItem(CLE) === false;
 }
+
 function sauver(){
+  const charge = JSON.stringify(S);
   try{
-    localStorage.setItem(CLE, JSON.stringify(S));
+    /* la copie de secours garde l'état précédent : si l'écriture principale
+       est coupée en route, le chargement suivant retombe dessus */
+    const avant = localStorage.getItem(CLE);
+    if(avant) localStorage.setItem(CLE_BAK, avant);
+    localStorage.setItem(CLE, charge);
     majEtat(`Enregistré · ${new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}`);
     return true;
   }catch(e){ majEtat("⚠ Enregistrement bloqué", true); return false; }
 }
+
+/* demande à Android de ne jamais évincer ces données pour récupérer de la place */
+async function ancrerStockage(){
+  try{
+    if(!navigator.storage || !navigator.storage.persist) return null;
+    if(await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  }catch(e){ return null; }
+}
+
+function joursDepuisExport(){
+  const d = localStorage.getItem(CLE_EXP);
+  if(!d) return null;
+  return Math.floor((Date.now() - parseInt(d,10))/(1000*60*60*24));
+}
+function noterExport(){ try{ localStorage.setItem(CLE_EXP, String(Date.now())); }catch(e){} }
 function majEtat(txt, ko){
   const e = document.getElementById("etat");
   e.textContent = txt; e.style.color = ko ? "var(--rouge)" : "var(--encre2)";
@@ -360,8 +394,16 @@ function rendreBord(){
   const tops = Object.entries(b.parCat).filter(([n])=>TYPE[n]!=="flux").sort((a,c)=>c[1]-a[1]);
   const totTops = tops.reduce((s,x)=>s+x[1],0) || 1;
   const chaudes = echeancesChaudes();
+  const jExp = joursDepuisExport();
+  const rappelSauvegarde = S.tx.length>0 && (jExp===null || jExp>=14);
 
   document.getElementById("vue-bord").innerHTML = `
+  ${rappelSauvegarde?`<div class="alerte" style="background:var(--vert-clair);color:var(--vert)">
+    <b>Pensez à sauvegarder</b><br>
+    ${jExp===null?"Vous n'avez encore jamais exporté vos données.":`Dernier export il y a ${jExp} jours.`}
+    <button id="rappelExp" style="margin-top:10px;min-height:44px;width:100%;border:none;border-radius:11px;background:var(--vert);color:#fff;font-weight:600">Exporter maintenant</button>
+  </div>`:""}
+
   ${chaudes.length?`<div class="alerte"><b>À régler bientôt</b><br>
     ${chaudes.slice(0,4).map(x=>`${esc(x.c.personne)} — ${f(resteDu(x.c))} ${x.c.sens==="pret"?"à encaisser":"à payer"} ${x.j<0?`<b>(retard de ${-x.j} j)</b>`:x.j===0?"<b>aujourd'hui</b>":`dans ${x.j} j`}`).join("<br>")}
   </div>`:""}
@@ -442,6 +484,16 @@ function rendreBord(){
     </div>
     ${dettesDuMois>0?`<div class="mini" style="margin-top:10px">${f(dettesDuMois)} de dettes à échéance ce mois — déjà retirés du disponible quotidien.</div>`:""}
   </div>`:""}`;
+
+  const r = document.getElementById("rappelExp");
+  if(r) r.onclick = exporterJson;
+}
+
+function exporterJson(){
+  telecharger(JSON.stringify(S), `sauvegarde-budget-${aujISO()}.json`, "application/json");
+  noterExport();
+  rendre();
+  toast("Sauvegarde téléchargée. Mettez-la dans Drive ou WhatsApp.");
 }
 
 /* ---- RELEVÉ ---- */
@@ -834,7 +886,37 @@ function rendreReglages(){
     <button class="btn clair" id="rJson" style="margin-bottom:14px">Sauvegarde complète</button>
     <input type="file" id="rFichier" accept=".json" style="margin-bottom:10px">
     <button class="btn vert" id="rRestaurer">Restaurer depuis un fichier</button>
+  </div>
+  <div class="carte">
+    <h2>État du stockage</h2>
+    <div class="ligne"><span style="font-size:14px">Opérations</span><span class="num">${S.tx.length}</span></div>
+    <div class="ligne"><span style="font-size:14px">Prêts et dettes</span><span class="num">${S.creances.length}</span></div>
+    <div class="ligne"><span style="font-size:14px">Dernier export</span><span class="num" id="dExp">—</span></div>
+    <div class="ligne"><span style="font-size:14px">Protection anti-effacement</span><span class="num" id="dAncre">…</span></div>
+    <div class="ligne"><span style="font-size:14px">Espace occupé</span><span class="num" id="dTaille">—</span></div>
+    <div class="mini" style="margin-top:12px;line-height:1.55">
+      « Protection anti-effacement » active signifie qu'Android ne supprimera pas ces données
+      pour récupérer de l'espace. Elle ne protège pas d'un effacement manuel des données du site
+      ni d'un changement de téléphone : seul l'export le fait.
+    </div>
   </div>`;
+
+  (async ()=>{
+    const j = joursDepuisExport();
+    const e1 = document.getElementById("dExp");
+    if(e1) e1.textContent = j===null ? "jamais" : j===0 ? "aujourd'hui" : `il y a ${j} j`;
+    const anc = await ancrerStockage();
+    const e2 = document.getElementById("dAncre");
+    if(e2){
+      e2.textContent = anc===true ? "active" : anc===false ? "non accordée" : "indisponible";
+      e2.style.color = anc===true ? "var(--vert)" : "var(--ocre)";
+    }
+    try{
+      const est = await navigator.storage.estimate();
+      const e3 = document.getElementById("dTaille");
+      if(e3) e3.textContent = (est.usage/1024).toFixed(1).replace(".",",")+" Ko";
+    }catch(e){}
+  })();
 
   document.getElementById("retour2").onclick = ()=>history.back();
   document.querySelectorAll("[data-bud]").forEach(i=>{
@@ -851,7 +933,7 @@ function rendreReglages(){
     }
     telecharger(l.join("\n"),"releve-budget.csv","text/csv");
   };
-  document.getElementById("rJson").onclick = ()=> telecharger(JSON.stringify(S),"sauvegarde-budget.json","application/json");
+  document.getElementById("rJson").onclick = exporterJson;
   document.getElementById("rRestaurer").onclick = ()=>{
     const fi = document.getElementById("rFichier").files[0];
     if(!fi){ toast("Choisissez d'abord un fichier"); return; }
@@ -1019,6 +1101,7 @@ document.addEventListener("touchend", e=>{
 /* ============================ DÉMARRAGE ============================ */
 if(!charger()) majEtat("⚠ Stockage inaccessible", true);
 else majEtat(S.tx.length ? `${S.tx.length} opération${S.tx.length>1?"s":""} enregistrée${S.tx.length>1?"s":""}` : "Aucune donnée pour l'instant");
+ancrerStockage();
 history.replaceState({vue:"bord"},"");
 basculer("depense");
 majUnite();
